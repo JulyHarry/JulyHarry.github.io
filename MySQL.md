@@ -17,8 +17,8 @@
 | CREATE           | 建表                           | **CREATE TABLE** _tbname_ (<br />_columnA INT NOT NULL AUTO_INCREMENT PRIMARY KEY,_<br />_columnB VARCHAR(20) NULL DEFAULT 'something',_<br />_columnC DATE,_<br />); |
 | INSERT           | 插入数据                       | **INSERT INTO** _tbname_ **(**_columnA, columnB, columnC_**)** <br />**VALUES**  **(**‘_valueA1_’**,**  ‘_valueB1_’**,** ‘_valueC1_’**)**,<br />&emsp;&emsp;&emsp;&emsp;&ensp;(‘_valueA2_’**,**  ‘_valueB2_’**,** ‘_valueC2_’),<br /> &emsp;&emsp;&emsp;&emsp;&ensp;(‘_valueA3_’**,**  ‘_valueB3_’**,** ‘_valueC3_’); |
 | UPDATE           | 更新数据                       | **UPDATE** _tbname_ **SET** _columnA_='_valueA_', _columnB_='_valueB_' <br />_WHERE_ _conditon_; |
-| DELETE           | 删除数据                       | **DELETE FROM** *tbname WHERE condition*;                    |
-| TRUNCATE         | 重建表<br />(**删除所有数据**) | **TRUNCATE TABLE** *tbname*;                                 |
+| DELETE           | 删除数据                       | --删除后插入数据从**断点后继续**<br />**DELETE FROM** *tbname WHERE condition*; |
+| TRUNCATE         | 重建表<br />(**删除所有数据**) | --删除**效率高**<br />--删除后插入数据**从0继续**<br />**TRUNCATE TABLE** *tbname*; |
 | DESCRIBE         | 查看表结构                     | **DESCRIBE** *tbname*;<br />**SHOW COLUMNS FROM** *tbname*;  |
 | [ALTER](##Alter) | 改表                           | **ALTER TABLE** *tbname* **ADD COLUMN** *columnD char(10)*;  |
 | LIKE             | 复制表                         | **CREATE TABLE** *newtable* **LIKE** *tbname*;                      --仅复制表结构<br />**CREATE TABLE** *newtable* **SELECT * FROM** *tbname*; --复制表结构和数据 |
