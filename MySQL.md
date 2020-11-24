@@ -17,8 +17,8 @@
 | CREATE           | 建表                           | **CREATE TABLE** _tbname_ (<br />_columnA INT NOT NULL AUTO_INCREMENT PRIMARY KEY,_<br />_columnB VARCHAR(20) NULL DEFAULT 'something',_<br />_columnC DATE,_<br />); |
 | INSERT           | 插入数据                       | **INSERT INTO** _tbname_ **(**_columnA, columnB, columnC_**)** <br />**VALUES**  **(**‘_valueA1_’**,**  ‘_valueB1_’**,** ‘_valueC1_’**)**,<br />&emsp;&emsp;&emsp;&emsp;&ensp;(‘_valueA2_’**,**  ‘_valueB2_’**,** ‘_valueC2_’),<br /> &emsp;&emsp;&emsp;&emsp;&ensp;(‘_valueA3_’**,**  ‘_valueB3_’**,** ‘_valueC3_’); |
 | UPDATE           | 更新数据                       | **UPDATE** _tbname_ **SET** _columnA_='_valueA_', _columnB_='_valueB_' <br />_WHERE_ _conditon_; |
-| DELETE           | 删除数据                       | --删除后插入数据从**断点后继续**<br />**DELETE FROM** *tbname WHERE condition*; |
-| TRUNCATE         | 重建表<br />(**删除所有数据**) | --删除**效率高**<br />--删除后插入数据**从0继续**<br />**TRUNCATE TABLE** *tbname*; |
+| DELETE           | 删除数据                       | --删除后插入数据从**断点后继续**<br />--返回删除行数<br />-**支持事务回滚**<br />**DELETE FROM** *tbname WHERE condition*; |
+| TRUNCATE         | 重建表<br />(**删除所有数据**) | --删除后插入数据**从0继续**<br />--不返回删除行数<br />--**不支持事务回滚**<br />--删除**效率高**<br />**TRUNCATE TABLE** *tbname*; |
 | DESCRIBE         | 查看表结构                     | **DESCRIBE** *tbname*;<br />**SHOW COLUMNS FROM** *tbname*;  |
 | [ALTER](##Alter) | 改表                           | **ALTER TABLE** *tbname* **ADD COLUMN** *columnD char(10)*;  |
 | LIKE             | 复制表                         | **CREATE TABLE** *newtable* **LIKE** *tbname*;                      --仅复制表结构<br />**CREATE TABLE** *newtable* **SELECT * FROM** *tbname*; --复制表结构和数据 |
@@ -108,6 +108,212 @@
 | 函数名   | 功能 | 方法                |
 | -------- | ---- | ------------------- |
 | IFNULL() |      | IFNULL(*colA*, *0*) |
+
+# 事务
+
+**一个事务是由一条或者多条sql语句构成，这一条或者多条sql语句要么全部执行成功，要么全部执行失败！**
+
+## 四大特性（ACID）
+
+- 原子性（Atomicity）：事务中所有操作是不可再分割的原子单位。事务中所有操作要么全部执行成功，要么全部执行失败。
+- 一致性（Consistency）：事务执行后，数据库状态与其它业务规则保持一致。如转账业务，无论事务执行成功与否，参与转账的两个账号余额之和应该是不变的。
+- 隔离性（Isolation）：隔离性是指在并发操作中，不同事务之间应该隔离开来，使每个并发中的事务不会相互干扰。
+- 持久性（Durability）：一旦事务提交成功，事务中所有的数据操作都必须被持久化到数据库中，即使提交事务后，数据库马上崩溃，在数据库重启时，也必须能保证通过某种机制恢复数据。
+
+## 事务步骤
+
+1. 取消自动提交
+
+   * SHOW variables LIKE 'auto%';
+
+     * | Variable\_name             | Value |
+       | :------------------------- | :---- |
+       | auto\_generate\_certs      | ON    |
+       | auto\_increment\_increment | 1     |
+       | auto\_increment\_offset    | 1     |
+       | autocommit                 | ON    |
+       | automatic\_sp\_privileges  | ON    |
+
+   * SET autocommit = 0;
+
+2. 开启事务
+
+   * START TRANSACTION;
+
+3. SQL实现语句
+
+4. 关闭事务
+
+   * COMMIT;      --提交
+   * ROLLBACK; --回滚
+
+# JDBC
+
+JDBC ( **J**ava **D**ata**b**ase **C**onnectivity )是一个独立于特定数据库管理系统（DBMS）、通用的SQL数据库存取和操作的公共接口（一组API），定义了用来访问数据库的标准Java类库，使用这个类库可以以一种标准的方法、方便地访问数据库资源。
+
+JDBC为访问不同的数据库提供了一种统一的途径，目标是使程序员使用JDBC可以连接任何提供了JDBC驱动程序的数据库系统。
+
+## 步骤
+
+总体实例：
+
+```java
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.sql.*;
+import java.util.Properties;
+
+public class Mysql8 {
+    public static void main(String[] args) throws IOException, ClassNotFoundException, SQLException {
+        Connection connection = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        String sql = "";
+
+        Properties info = new Properties();
+        info.load(new FileInputStream("Mysql/src/jdbc.properties"));  //ModulesName/src/file
+        String user = info.getProperty("user");
+        String password = info.getProperty("password");
+        String url = info.getProperty("url");
+        String driver = info.getProperty("driver");
+
+        //1. 加载驱动
+        Class.forName(driver);
+
+        //2. 连接数据库
+        connection = DriverManager.getConnection(url, user, password);
+
+        //3 编写SQL
+        sql = "select id, name, gender from employee where age = ? and location = ?";
+
+        //4. 获取执行SQL语句命令对象
+        ps = connection.prepareStatement(sql);
+        ps.setInt(1, 18);
+        ps.setString(2, "Beijing");
+
+        //5. 使用命令对象执行sql语句
+        rs = ps.executeQuery();
+        while (rs.next()) {
+            int id = rs.getInt(1);
+            String name = rs.getString("name");
+            Object gender = rs.getObject(3);
+            System.out.println(id + name + gender);
+        }
+
+        //6.关闭连接 (后用先关)
+        rs.close();
+        ps.close();
+        connection.close();
+    }
+}
+```
+
+### 1 加载驱动
+
+```java
+//方式1：反射
+Class.forName("com.mysql.cj.jdbc.Driver"); //MySQL6.0之后使用 cj
+Class.forName("com.mysql.jdbc.Driver");    //MySQL5.0使用
+
+//方式2：new 对象 （不推荐）
+import com.sql.DriverManager;
+import com.mysql.cj.jdbc.Driver;           //MySQL6.0之后使用 cj
+import com.mysql.jdbc.Driver;              //MySQL5.0使用
+DriverManager.registerDriver(new Driver());
+```
+
+### 2 连接数据库
+
+```java
+//方式1：url格式为 "jdbc:mysql://localhost:3306/databaseName"
+//端口查询：mysql 中 show variables like 'port';
+Connection connection = DriverManager.getConnection("url", "user", "password");
+
+//方式2：url格式为 "jdbc:mysql://localhost:3306/databaseName?user=root&password=root"
+Connection connection = DriverManager.getConnection("url")
+```
+
+### 3 编写SQL
+
+```java
+//方式1：带参数的SQL语句，使用PreparedStatement执行
+String sql = "select * from employee where id = ? and name = ?";
+
+//方式2：完整的拼接好的SQL语句，使用Statement执行
+int id = 20;
+String name = "tom";
+String sql = "select * from employee where id = " + id + " and name = " + name;
+```
+
+### 4 获取执行SQL的编译对象
+
+```java
+//方式1：PreparedStatement
+PreparedStatement ps = connection.prepareStatement(sql); //预编译
+ps.setString(2, "tom"); //序号表示第几个参数
+ps.setInt(1, 20);
+ps.setObject(3, Object);  //不知道类型时使用
+
+//方式2：Statement
+Statement statement = connection.createStatement();
+```
+
+注意：
+
+* **Prepared**Statement ps = connection.**prepare**Statement(sql); 两个**拼写不一样**
+
+* PreparedStatement ps = connection.prepareStatement(**sql**);   **必须有参数**
+
+  Statement statement = connection.createStatement();              没有参数
+
+### 5 执行SQL
+
+```java
+//增删改
+ps.executeUpdate()；
+statement.executeUpdate(sql);
+
+//查
+ResultSet rs = ps.executeQuery();
+ResultSet rs = statement.executeQuery(sql);
+//返回单一行
+if (rs.next()) {                  //next会不断指向下一行; previous会指向上一行(几乎不用)
+  String name = rs.getString(1);  //序号数是指select语句中对应的列值，不是数据表中对应的列值
+  int id = rs.getInt("id");       //也可以直接使用列名直接查询
+  Object ob = rs.getObject(3);    //不清楚类型时可以使用Object替代
+}
+//返回多行
+while (rs.next()) {
+  String name = rs.getString(1);
+  int id = rs.getInt("id");
+  Object ob = rs.getObject(3);
+}
+
+//都可以执行,但是返回BOOLEAN,不推荐
+ps.execute();
+statement.execute(sql);
+```
+
+### 6 关闭连接
+
+```java
+//本着Stack(后用先关)的原则
+rs.close();
+statement.close();
+ps.close();
+connection.close();
+```
+
+## PreparedStatement VS Statement
+
+PreparedStatement
+
+* **不拼接SQL语句**，减少语法错误，语义性强
+* SQL的String部分与**参数部分分离**，提高维护性
+* 有效**解决SQL注入**问题
+* **效率高**，大大减少编译次数（运行次数不变）
+
+
 
 # 注释
 
