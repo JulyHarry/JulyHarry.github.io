@@ -73,7 +73,7 @@
 | IN                | 包含                             | *SELECT \* FROM tbname WHERE colA* **IN** *('valueA', 'valueB', 'valueC')*;<br />*SELECT \* FROM tbname WHERE colA* **IN** *(SELECT ...)*;<br />*SELECT \* FROM tbname WHERE* ==*(colA, colB)* **IN**<br /> *(SELECT a, b FROM tbname1)*== |
 | [JOIN ON](##JOIN) | 关联查询                         | *SELECT \* FROM a* **JOIN** *b* **ON** *a.key = b.key*; <br />*SELECT \* FROM a* **LEFT JOIN** *b* **ON** *a.key = b.key*;<br />*SELECT \* FROM a*  **JOIN** *b* **ON** *a.key = b.key* **JOIN** *c ON b.key = c.key*; |
 | LIKE              | 通配表示                         | *SELECT \* FROM tbname WHERE colA* **LIKE** *'a_'*;<br />`-`匹配**一个**字符<br />*SELECT \* FROM tbname WHERE colA* **LIKE** *'a%'*;<br />`%`匹配**任意**字符(**可为0**) |
-| LIMIT             | 限制行数                         | *SELECT \* FROM tbname ORDER BY colA* **LIMIT m**;<br />--前m行<br />*SELECT \* FROM tbname ORDER BY colA* **LIMIT m, n**;<br />--第==**m+1**==行到第**m+n**行<br />*SELECT \* FROM tbname ORDER BY colA* **LIMIT n OFFSET m**;<br />--第==**m+1**==行到第**m+n**行<br />*SELECT \* FROM tbname ORDER BY colA* **LIMIT (page-1)*size, size**; |
+| LIMIT             | 限制行数                         | *SELECT \* FROM tbname ORDER BY colA* **LIMIT m**;<br />--前m行<br />*SELECT \* FROM tbname ORDER BY colA* **LIMIT m, n**;<br />--第==**m+1**==行到第**m+n+1**行<br />*SELECT \* FROM tbname ORDER BY colA* **LIMIT n OFFSET m**;<br />--第==**m+1**==行到第**m+n+1**行<br />*SELECT \* FROM tbname ORDER BY colA* **LIMIT (page-1)*size, size**; |
 | NOT               | 不在                             | *SELECT \* FROM tbname WHERE colA* **NOT** *IN (1, 2, 3, 4)*;<br />*SELECT \* FROM tbname WHERE colA* **NOT** *BETWEEN 1 AND 4*;<br />*SELECT \* FROM tbname WHERE* **NOT** *(colA = 1 OR colA=2)*; |
 | ORDER BY          | 排序                             | *SELECT \* FROM tbname* **ORDER BY** *colA* ;             --升序<br />*SELECT \* FROM tbname* **ORDER BY** *colA* **DESC**;   --降序<br />*SELECT \* FROM tbname* **ORDER BY** *colA* **DESC**, *colB, colC* **DESC**;<br />*SELECT \* FROM tbname* **ORDER BY** *2*;                   --按第`2`列升序 |
 | SELECT            | 查询                             | **SELECT** *\* FROM tbname*;                                 |
@@ -109,6 +109,28 @@
 | -------- | ---- | ------------------- |
 | IFNULL() |      | IFNULL(*colA*, *0*) |
 
+# 字符集(需补充)
+
+
+
+
+
+# 权限管理(需补充角色)
+
+| 功能       | 用法                                                         |
+| ---------- | ------------------------------------------------------------ |
+| 查看用户   | **SELECT user FROM mysql.user;<br />SELECT * FROM mysql.user;** |
+| 创建用户   | **CREATE USER** *myuser* **IDENTIFIED BY** *'mypassword'*;<br />**CREATE USER** 'myuser'@'localhost' **IDENTIFIED BY** *'mypassword'*;<br />--if [ Your password does not satisfy the current policy requirements ]<br />-- SHOW GLOBAL variables LIKE 'validate_password%';<br />-- SET GLOBAL variables validate_password**.**policy = 0;  #MySQL8.0<br />-- SET GLOBAL variables validate_password**_**policy = 0;  #MySQL5.0 |
+| 修改用户名 | **RENAME USER** *myuser* **TO** newuser;                     |
+| 删除用户   | **DROP USER** *myuser*;<br />**DROP USER** *'myuser'@'localhost'*; |
+| 查看权限   | **SHOW GRANTS FOR** *myuser*;<br />**SHOW GRANTS FOR** *'myuser'@'localhost'*; |
+| 授予权限   | **GRANT** *ALL PRIVILEGES* **ON** \*.\* **FROM** *'myuser'@'localhost'*;<br />-- \*.\* 第一个*指数据库，第二个*指数据表，可以换位指定的数据库和数据表(e.g. 'dbname'.'tbname' )；<br />-- all privileges 可换成select, update, insert, delete, drop, create等 |
+| 收回权限   | **REVOKE** *ALL PRIVILEGES* **ON** \*.\* **FROM** *'myuser'@'localhost'*; |
+| 修改密码   | **ALTER USER** *'myuser'@'localhost'* **IDENTIFIED BY** *'newpassword'*;  #MySQL8.0<br /> **SET PASSWORD FOR** *myuser* **=** **Password**('*newpassword*');            #MySQL5.0 |
+| 刷新权限   | **FLUSH PRIVILEGES**;                                        |
+
+
+
 # 事务
 
 **一个事务是由一条或者多条sql语句构成，这一条或者多条sql语句要么全部执行成功，要么全部执行失败！**
@@ -136,16 +158,34 @@
 
    * SET autocommit = 0;
 
+   autocommit针对每一个连接，不是针对服务器
+
 2. 开启事务
 
    * START TRANSACTION;
 
+   当出现`START TRANSACTION;`时，会自动关闭隐式提交。
+
 3. SQL实现语句
 
-4. 关闭事务
+4. (设置保留点 SAVEPOINT)
+
+5. 关闭事务
 
    * COMMIT;      --提交
    * ROLLBACK; --回滚
+
+```mysql
+START TRANSACTION;
+// ...
+SAVEPOINT delete1;
+// ...
+ROLLBACK TO delete1;
+// ...
+COMMIT;
+```
+
+不能回退select语句（无意义），**不能回退`CREATE`, `DROP`语句**。
 
 # JDBC
 
