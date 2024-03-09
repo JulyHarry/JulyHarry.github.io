@@ -261,8 +261,173 @@ end;
 @var_name
 # 不需要提前声明，即用即声明
 
+/*
+create procedure prob()
+begin
+     set @var_a = ‘val_a’;
+     select var_a;
+ end;
 
+select @var_a;
+ */
 ```
+
+系统变量
+全局变量
+在myslq启动时初始化，可以通过修改文件 my.ini 来改变初始值。
+
+```mysql
+@@global.global_var
+
+# 查看全局变量
+show global variables;
+
+#查看某全局变量
+select @@global.sort_buffer_size;
+
+# 修改全部变量的值
+set global sort_buffer_size = 40000;
+set @@global.sort_buffer_size = 40000;
+```
+会话变量
+每次建立一个新连接时初始化，mysql 会将当前所有全局变量复制到当前会话，作为会话变量。
+
+
+```mysql
+@@session.session_var
+
+# 查看全局变量
+show session variables;
+
+#查看某全局变量
+select @@session.sort_buffer_size;
+
+# 修改全部变量的值
+set session sort_buffer_size = 40000;
+set @@session.sort_buffer_size = 40000;
+```
+
+参数
+
+传入参数 `in in_var_name type`
+
+传出参数 `out out_var_name type`
+
+传入传出参数 `inout inout_var_name type`
+
+```mysql
+create procedure proc_args(in aid int, in aname varchar(20), out anick varchar(20), inout aintroduction varchar(200))
+begin
+    select nickname, introduction into anick, aintroduction from web.user_info where id = aid and username = aname and introduction like concat('%', aintroduction, '%');
+end;
+
+set @intro = '小米';
+call proc_args(1, 'pig', @nick, @intro);
+select @nick, @intro;
+```
+
+
+
+条件判断
+
+if elseif else
+
+if ... then ... elseif ... then  ... else ... end if
+
+```mysql
+if ...
+  then ...
+else if ...
+  then ...
+else ...
+end if;
+```
+
+case when
+
+case ... when ... then ... else ... end case
+
+```mysql
+# 方式1
+case ...
+  when ... then ...
+  when ... then ...
+  else ...
+end case;
+
+# 方式2
+case
+  when ... then ...
+  when ... then ...
+  else ...
+end case;
+```
+
+循环判断
+
+while
+
+```mysql
+[label:]
+while ...
+  do ...
+end while [label];
+```
+
+repeat
+
+```mysql
+[label:]
+repeat ...
+until ...
+end repeat [label];
+```
+
+loop
+
+```mysql
+[label:]
+loop ...
+if ... then leave [label] end if;
+end repeat [label];
+```
+
+
+
+leave
+
+=break
+
+
+
+iterate
+
+=continue
+
+
+
+游标
+
+```mysql
+declare cursor_name cursor for select_statement;
+
+open cursor_name;
+
+fetch cursor_name into var_name [, var_name, ...];
+
+close cursor_name;
+```
+
+异常
+
+```mysql
+declare handler_action handler for condition_value [, condition_val, ...] statement
+
+# handler_action: continue | exit | undo
+# condition_value: mysql_error_code | condition_name | sqlwarning | not found | sqlexception
+```
+
+
 
 
 
